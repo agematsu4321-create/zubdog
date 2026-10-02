@@ -19,11 +19,11 @@
 
 ### オーダーメイド注文
 
-![オーダーメイド注文](docs/screenshots/custom-order.png)
+![オーダーメイド注文](docs/screenshots/custom_order.png)
 
 ### 注文履歴
 
-![注文履歴](docs/screenshots/order-history.png)
+![注文履歴](docs/screenshots/order_history.png)
 
 ### 管理画面
 
