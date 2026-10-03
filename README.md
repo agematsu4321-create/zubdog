@@ -128,7 +128,14 @@ ZUBDOGでは、この一連の流れをECサイト内で完結できるように
 - VS Code
 
 ---
+## セットアップ
 
+### 1. リポジトリを取得
+
+```bash
+git clone https://github.com/agematsu4321-create/zubdog.git
+cd zubdog
+npm install
 ## オーダーメイド注文フロー
 
 ```text
