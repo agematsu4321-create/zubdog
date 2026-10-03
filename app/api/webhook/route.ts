@@ -184,7 +184,10 @@ export async function POST(request: Request) {
         const { error: itemError } =
           await supabaseAdmin
             .from("orders_item")
-            .insert(orderItems);
+            .upsert(orderItems, {
+              onConflict: "order_id,product_id",
+              ignoreDuplicates: true,
+            });
 
         if (itemError) {
           console.error(
@@ -271,68 +274,60 @@ export async function POST(request: Request) {
       }
 
       /*
-        custom_orders が既にあるか確認
+        custom_orders 二重作成防止
       */
-      const {
-        data: existingCustomOrder,
-        error: customOrderCheckError,
-      } = await supabaseAdmin
-        .from("custom_orders")
-        .select("id")
-        .eq("order_id", order.id)
-        .maybeSingle();
+      const { error: customOrderUpsertError } =
+        await supabaseAdmin
+          .from("custom_orders")
+          .upsert(
+            {
+              order_id: order.id,
+              status: "paid",
+            },
+            {
+              onConflict: "order_id",
+              ignoreDuplicates: true,
+            }
+          );
 
-      if (customOrderCheckError) {
+      if (customOrderUpsertError) {
         console.error(
-          "CUSTOM ORDER CHECK ERROR:",
-          customOrderCheckError
+          "CUSTOM ORDER UPSERT ERROR:",
+          customOrderUpsertError
         );
 
         return NextResponse.json(
           {
-            error:
-              "オーダー注文の確認に失敗しました",
+            error: "オーダー注文の保存に失敗しました",
           },
           { status: 500 }
         );
       }
 
-      let customOrderId =
-        existingCustomOrder?.id ?? null;
+      const {
+        data: customOrder,
+        error: customOrderFetchError,
+      } = await supabaseAdmin
+        .from("custom_orders")
+        .select("id")
+        .eq("order_id", order.id)
+        .single();
 
-      /*
-        まだなければ作成
-      */
-      if (!customOrderId) {
-        const {
-          data: newCustomOrder,
-          error: customOrderError,
-        } = await supabaseAdmin
-          .from("custom_orders")
-          .insert({
-            order_id: order.id,
-            status: "paid",
-          })
-          .select("id")
-          .single();
+      if (customOrderFetchError || !customOrder) {
+        console.error(
+          "CUSTOM ORDER FETCH ERROR:",
+          customOrderFetchError
+        );
 
-        if (customOrderError || !newCustomOrder) {
-          console.error(
-            "CUSTOM ORDER SAVE ERROR:",
-            customOrderError
-          );
-
-          return NextResponse.json(
-            {
-              error:
-                "オーダー注文の保存に失敗しました",
-            },
-            { status: 500 }
-          );
-        }
-
-        customOrderId = newCustomOrder.id;
+        return NextResponse.json(
+          {
+            error: "オーダー注文の取得に失敗しました",
+          },
+          { status: 500 }
+        );
       }
+
+      const customOrderId = customOrder.id;
 
       /*
         custom_order_items 二重登録防止
@@ -371,6 +366,7 @@ export async function POST(request: Request) {
           (lock) => ({
             custom_order_id:
               customOrderId,
+            custom_cart_lock_id: lock.id,
 
             product_type:
               lock.product_type,
@@ -410,7 +406,10 @@ export async function POST(request: Request) {
         const { error: customItemError } =
           await supabaseAdmin
             .from("custom_order_items")
-            .insert(customItems);
+            .upsert(customItems, {
+              onConflict: "custom_cart_lock_id",
+              ignoreDuplicates: true,
+            });
 
         if (customItemError) {
           console.error(
