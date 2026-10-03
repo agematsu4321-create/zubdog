@@ -136,33 +136,42 @@ ZUBDOGでは、この一連の流れをECサイト内で完結できるように
 git clone https://github.com/agematsu4321-create/zubdog.git
 cd zubdog
 npm install
-```bash
-git clone https://github.com/agematsu4321-create/zubdog.git
-cd zubdog
-npm install
 ```
 
-## オーダーメイド注文フロー
+### 2. 環境変数を設定
+
+`.env.example` を参考に `.env.local` を作成します。
+
+```bash
+cp .env.example .env.local
+```
+
+Supabase、Stripe、Resendの環境変数を設定してください。
+
+実際の値はセキュリティ上GitHubには含めていません。
+
+### 3. 開発サーバーを起動
+
+```bash
+npm run dev
+```
+
+ブラウザで以下を開きます。
 
 ```text
-商品カスタマイズ
-↓
-注文内容・価格をサーバー側で保存
-↓
-カート
-↓
-Stripe決済
-↓
-注文作成
-↓
-管理者が制作開始
-↓
-完成写真を登録
-↓
-購入者へ確認依頼
-↓
-購入者が承認
-または
-修正依頼
+http://localhost:3000
 ```
-BDOG)
+
+### 4. Stripe Webhook
+
+ローカル開発時はStripe CLIを使用します。
+
+```bash
+stripe listen --forward-to localhost:3000/api/webhook
+```
+
+取得したWebhook Signing Secretを `.env.local` の `STRIPE_WEBHOOK_SECRET` に設定します。
+
+---
+
+## オーダーメイド注文フロー
