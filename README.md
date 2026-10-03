@@ -136,6 +136,35 @@ ZUBDOGでは、この一連の流れをECサイト内で完結できるように
 git clone https://github.com/agematsu4321-create/zubdog.git
 cd zubdog
 npm install
+```bash
+git clone https://github.com/agematsu4321-create/zubdog.git
+cd zubdog
+npm install
+```
+
+## オーダーメイド注文フロー
+
+```text
+商品カスタマイズ
+↓
+注文内容・価格をサーバー側で保存
+↓
+カート
+↓
+Stripe決済
+↓
+注文作成
+↓
+管理者が制作開始
+↓
+完成写真を登録
+↓
+購入者へ確認依頼
+↓
+購入者が承認
+または
+修正依頼
+```
 ## オーダーメイド注文フロー
 
 ```text
