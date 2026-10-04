@@ -20,7 +20,14 @@ export default function LoginPage() {
         });
 
         if (error) {
-            setMessage(error.message);
+            if (error.message === "Invalid login credentials") {
+                setMessage("メールアドレスまたはパスワードが正しくありません");
+            } else if (error.message === "Email not confirmed") {
+                setMessage("メールアドレスの確認が完了していません");
+            } else {
+                setMessage("ログインに失敗しました。もう一度お試しください");
+            }
+
             return;
         }
 
