@@ -29,7 +29,16 @@ export default function ForgotPasswordPage() {
             );
 
             if (error) {
-                setMessage(error.message);
+                if (error.message.toLowerCase().includes("rate limit")) {
+                    setMessage(
+                        "短時間に何度も送信されています。しばらくしてからお試しください"
+                    );
+                } else {
+                    setMessage(
+                        "再設定メールの送信に失敗しました。もう一度お試しください"
+                    );
+                }
+
                 return;
             }
 

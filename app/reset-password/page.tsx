@@ -33,7 +33,23 @@ export default function ResetPasswordPage() {
             });
 
             if (error) {
-                setMessage(error.message);
+                const errorMessage = error.message.toLowerCase();
+
+                if (errorMessage.includes("auth session missing")) {
+                    setMessage(
+                        "再設定リンクが無効または期限切れです。もう一度再設定メールを送信してください"
+                    );
+                } else if (
+                    errorMessage.includes("password") &&
+                    errorMessage.includes("characters")
+                ) {
+                    setMessage("パスワードが短すぎます");
+                } else {
+                    setMessage(
+                        "パスワードの変更に失敗しました。もう一度お試しください"
+                    );
+                }
+
                 return;
             }
 
@@ -98,8 +114,8 @@ export default function ResetPasswordPage() {
                     {message ? (
                         <p
                             className={`text-sm ${message.includes("変更しました")
-                                    ? "text-green-600"
-                                    : "text-red-600"
+                                ? "text-green-600"
+                                : "text-red-600"
                                 }`}
                         >
                             {message}

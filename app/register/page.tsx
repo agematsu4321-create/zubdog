@@ -37,7 +37,21 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        setMessage(error.message);
+        if (
+          error.message.includes("already registered") ||
+          error.message.includes("already exists")
+        ) {
+          setMessage("このメールアドレスはすでに登録されています");
+        } else if (error.message.includes("Password")) {
+          setMessage("パスワードの条件を満たしていません");
+        } else if (error.message.includes("rate limit")) {
+          setMessage(
+            "短時間に何度も送信されています。しばらくしてからお試しください"
+          );
+        } else {
+          setMessage("新規登録に失敗しました。もう一度お試しください");
+        }
+
         return;
       }
 
@@ -128,8 +142,8 @@ export default function RegisterPage() {
           {message ? (
             <p
               className={`mt-4 text-center text-sm ${message.includes("登録できました")
-                  ? "text-green-600"
-                  : "text-red-600"
+                ? "text-green-600"
+                : "text-red-600"
                 }`}
             >
               {message}
