@@ -9,19 +9,28 @@ export default function CartPage() {
 
   const [agreeCancel, setAgreeCancel] = useState(false);
   const [agreeStone, setAgreeStone] = useState(false);
-  const [agreeConfirmation, setAgreeConfirmation] = useState(false);
+  const [agreeConfirmation, setAgreeConfirmation] =
+    useState(false);
+
+  const [isCheckingOut, setIsCheckingOut] =
+    useState(false);
 
   const hasCustomItems = cartItems.some(
     (item) => item.itemType === "custom"
   );
 
-  const hasExpiredCustomItem = cartItems.some((item) => {
-    if (item.itemType !== "custom") {
-      return false;
-    }
+  const hasExpiredCustomItem = cartItems.some(
+    (item) => {
+      if (item.itemType !== "custom") {
+        return false;
+      }
 
-    return new Date(item.priceExpiresAt).getTime() <= Date.now();
-  });
+      return (
+        new Date(item.priceExpiresAt).getTime() <=
+        Date.now()
+      );
+    }
+  );
 
   const total = cartItems.reduce((sum, item) => {
     if (item.itemType === "custom") {
@@ -34,6 +43,7 @@ export default function CartPage() {
   const canCheckout =
     cartItems.length > 0 &&
     !hasExpiredCustomItem &&
+    !isCheckingOut &&
     (!hasCustomItems ||
       (agreeCancel &&
         agreeStone &&
@@ -53,34 +63,63 @@ export default function CartPage() {
         !agreeStone ||
         !agreeConfirmation)
     ) {
-      alert("オーダー商品の注意事項に同意してください。");
+      alert(
+        "オーダー商品の注意事項に同意してください。"
+      );
       return;
     }
 
     try {
+      setIsCheckingOut(true);
+
       const regularSlugs = cartItems
-        .filter((item) => item.itemType !== "custom")
+        .filter(
+          (item) =>
+            item.itemType !== "custom"
+        )
         .map((item) => item.slug);
 
       const customLockIds = cartItems
-        .filter((item) => item.itemType === "custom")
+        .filter(
+          (item) =>
+            item.itemType === "custom"
+        )
         .map((item) => item.lockId);
 
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          slugs: regularSlugs,
-          customLockIds,
-        }),
-      });
+      const response = await fetch(
+        "/api/checkout",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            slugs: regularSlugs,
+            customLockIds,
+          }),
+        }
+      );
 
       const data = await response.json();
 
+      /*
+        未ログインの場合
+        → ログイン画面へ
+      */
+      if (response.status === 401) {
+        window.location.href =
+          "/login?next=/cart";
+        return;
+      }
+
       if (!response.ok) {
-        alert(data.error || "決済を開始できませんでした");
+        alert(
+          data.error ||
+          "決済を開始できませんでした"
+        );
         return;
       }
 
@@ -89,7 +128,12 @@ export default function CartPage() {
       }
     } catch (error) {
       console.error(error);
-      alert("決済を開始できませんでした");
+
+      alert(
+        "決済を開始できませんでした"
+      );
+    } finally {
+      setIsCheckingOut(false);
     }
   }
 
@@ -100,113 +144,136 @@ export default function CartPage() {
       </h1>
 
       {cartItems.length === 0 ? (
-        <p>カートに商品がありません。</p>
+        <p>
+          カートに商品がありません。
+        </p>
       ) : (
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
           <section className="md:col-span-2">
-            {cartItems.map((item, index) => {
-              const isCustom =
-                item.itemType === "custom";
+            {cartItems.map(
+              (item, index) => {
+                const isCustom =
+                  item.itemType ===
+                  "custom";
 
-              const isExpired =
-                isCustom &&
-                new Date(item.priceExpiresAt).getTime() <=
-                Date.now();
+                const isExpired =
+                  isCustom &&
+                  new Date(
+                    item.priceExpiresAt
+                  ).getTime() <=
+                  Date.now();
 
-              const itemTotal = isCustom
-                ? item.price * item.quantity
-                : item.price;
+                const itemTotal =
+                  isCustom
+                    ? item.price *
+                    item.quantity
+                    : item.price;
 
-              const itemKey = isCustom
-                ? item.cartKey
-                : `${item.slug}-${index}`;
+                const itemKey =
+                  isCustom
+                    ? item.cartKey
+                    : `${item.slug}-${index}`;
 
-              return (
-                <div
-                  key={itemKey}
-                  className="flex gap-4 border-b py-5"
-                >
-                  <div className="relative h-32 w-32 shrink-0 overflow-hidden">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      sizes="128px"
-                      className="object-cover"
-                    />
-                  </div>
+                return (
+                  <div
+                    key={itemKey}
+                    className="flex gap-4 border-b py-5"
+                  >
+                    <div className="relative h-32 w-32 shrink-0 overflow-hidden">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="128px"
+                        className="object-cover"
+                      />
+                    </div>
 
-                  <div className="flex-1">
-                    <h2 className="font-medium">
-                      {item.name}
-                    </h2>
+                    <div className="flex-1">
+                      <h2 className="font-medium">
+                        {item.name}
+                      </h2>
 
-                    {isCustom ? (
-                      <>
-                        <p className="mt-2 text-sm">
-                          Pattern {item.patternNumber}
-                        </p>
+                      {isCustom ? (
+                        <>
+                          <p className="mt-2 text-sm">
+                            Pattern{" "}
+                            {
+                              item.patternNumber
+                            }
+                          </p>
 
-                        <p className="mt-1 text-sm">
-                          天然石：{item.stoneName}
-                        </p>
+                          <p className="mt-1 text-sm">
+                            天然石：
+                            {
+                              item.stoneName
+                            }
+                          </p>
 
-                        <p className="mt-1 text-sm">
-                          数量：{item.quantity}個
-                        </p>
+                          <p className="mt-1 text-sm">
+                            数量：
+                            {
+                              item.quantity
+                            }
+                            個
+                          </p>
 
-                        <p className="mt-1 text-sm">
-                          ご要望：
-                          {item.requestText.trim()
-                            ? item.requestText
-                            : "なし"}
-                        </p>
+                          <p className="mt-1 text-sm">
+                            ご要望：
+                            {item.requestText.trim()
+                              ? item.requestText
+                              : "なし"}
+                          </p>
 
-                        <p className="mt-3 text-sm">
-                          1個 ¥
+                          <p className="mt-3 text-sm">
+                            1個 ¥
+                            {item.price.toLocaleString()}
+                          </p>
+
+                          <p className="mt-1 font-medium">
+                            小計 ¥
+                            {itemTotal.toLocaleString()}
+                          </p>
+
+                          {isExpired ? (
+                            <div className="mt-4">
+                              <p className="font-medium text-red-600">
+                                価格の有効期限が切れました
+                              </p>
+
+                              <p className="mt-1 text-sm text-red-600">
+                                この商品を削除して、オーダーを最初から作り直してください。
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="mt-3 text-xs text-gray-500">
+                              カート追加時の価格は7日間有効です。
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="mt-2">
+                          ¥
                           {item.price.toLocaleString()}
                         </p>
+                      )}
 
-                        <p className="mt-1 font-medium">
-                          小計 ¥
-                          {itemTotal.toLocaleString()}
-                        </p>
-
-                        {isExpired ? (
-                          <div className="mt-4">
-                            <p className="font-medium text-red-600">
-                              価格の有効期限が切れました
-                            </p>
-
-                            <p className="mt-1 text-sm text-red-600">
-                              この商品を削除して、オーダーを最初から作り直してください。
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-xs text-gray-500">
-                            カート追加時の価格は7日間有効です。
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="mt-2">
-                        ¥{item.price.toLocaleString()}
-                      </p>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeFromCart(index)
-                      }
-                      className="mt-4 text-sm underline"
-                    >
-                      削除
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeFromCart(
+                            index
+                          )
+                        }
+                        className="mt-4 text-sm underline"
+                      >
+                        削除
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </section>
 
           <aside className="h-fit border p-6">
@@ -215,10 +282,13 @@ export default function CartPage() {
             </h2>
 
             <div className="mt-6 flex justify-between">
-              <span>商品合計</span>
+              <span>
+                商品合計
+              </span>
 
               <span>
-                ¥{total.toLocaleString()}
+                ¥
+                {total.toLocaleString()}
               </span>
             </div>
 
@@ -231,7 +301,9 @@ export default function CartPage() {
               <span>合計</span>
 
               <span>
-                ¥{total.toLocaleString()}（税込）
+                ¥
+                {total.toLocaleString()}
+                （税込）
               </span>
             </div>
 
@@ -244,10 +316,13 @@ export default function CartPage() {
                 <label className="mt-4 flex items-start gap-3 text-sm">
                   <input
                     type="checkbox"
-                    checked={agreeCancel}
+                    checked={
+                      agreeCancel
+                    }
                     onChange={(e) =>
                       setAgreeCancel(
-                        e.target.checked
+                        e.target
+                          .checked
                       )
                     }
                     className="mt-1"
@@ -261,10 +336,13 @@ export default function CartPage() {
                 <label className="mt-4 flex items-start gap-3 text-sm">
                   <input
                     type="checkbox"
-                    checked={agreeStone}
+                    checked={
+                      agreeStone
+                    }
                     onChange={(e) =>
                       setAgreeStone(
-                        e.target.checked
+                        e.target
+                          .checked
                       )
                     }
                     className="mt-1"
@@ -278,10 +356,13 @@ export default function CartPage() {
                 <label className="mt-4 flex items-start gap-3 text-sm">
                   <input
                     type="checkbox"
-                    checked={agreeConfirmation}
+                    checked={
+                      agreeConfirmation
+                    }
                     onChange={(e) =>
                       setAgreeConfirmation(
-                        e.target.checked
+                        e.target
+                          .checked
                       )
                     }
                     className="mt-1"
@@ -300,13 +381,19 @@ export default function CartPage() {
               </p>
             )}
 
+            <p className="mt-6 text-xs text-gray-500">
+              ※ 購入にはログインが必要です。
+            </p>
+
             <button
               type="button"
               onClick={handleCheckout}
               disabled={!canCheckout}
-              className="mt-8 w-full bg-black p-3 text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+              className="mt-3 w-full bg-black p-3 text-white disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              購入手続きへ
+              {isCheckingOut
+                ? "処理中..."
+                : "購入手続きへ"}
             </button>
           </aside>
         </div>

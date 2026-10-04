@@ -17,8 +17,10 @@ export async function POST(request: Request) {
       ? body.customLockIds
       : [];
 
-
-    if (slugs.length === 0 && customLockIds.length === 0) {
+    if (
+      slugs.length === 0 &&
+      customLockIds.length === 0
+    ) {
       return NextResponse.json(
         { error: "カートが空です" },
         { status: 400 }
@@ -28,8 +30,18 @@ export async function POST(request: Request) {
     const uniqueSlugs = [...new Set(slugs)];
 
     const uniqueCustomLockIds = [
-      ...new Set(customLockIds.map((id: unknown) => Number(id))),
+      ...new Set(
+        customLockIds.map((id: unknown) =>
+          Number(id)
+        )
+      ),
     ].filter((id) => Number.isInteger(id));
+
+    /*
+      =====================================
+      ログイン確認
+      =====================================
+    */
 
     const supabase = await createClient();
 
@@ -37,33 +49,47 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // オーダー商品はログイン必須
-    if (uniqueCustomLockIds.length > 0 && !user) {
+    // 通常商品・オーダー商品どちらもログイン必須
+    if (!user) {
       return NextResponse.json(
-        { error: "オーダー商品の購入にはログインが必要です" },
+        {
+          error:
+            "購入にはログインが必要です",
+        },
         { status: 401 }
       );
     }
 
-    // 通常商品
+    /*
+      =====================================
+      通常商品
+      =====================================
+    */
+
     let products: any[] = [];
 
     if (uniqueSlugs.length > 0) {
-      const { data, error } = await supabaseAdmin
-        .from("products")
-        .select("*")
-        .in("slug", uniqueSlugs)
-        .eq("sold_out", false)
-        .eq("is_active", true);
+      const { data, error } =
+        await supabaseAdmin
+          .from("products")
+          .select("*")
+          .in("slug", uniqueSlugs)
+          .eq("sold_out", false)
+          .eq("is_active", true);
 
       if (error || !data) {
         return NextResponse.json(
-          { error: "商品を取得できませんでした" },
+          {
+            error:
+              "商品を取得できませんでした",
+          },
           { status: 500 }
         );
       }
 
-      if (data.length !== uniqueSlugs.length) {
+      if (
+        data.length !== uniqueSlugs.length
+      ) {
         return NextResponse.json(
           {
             error:
@@ -76,37 +102,61 @@ export async function POST(request: Request) {
       products = data;
     }
 
-    // オーダー商品
+    /*
+      =====================================
+      オーダー商品
+      =====================================
+    */
+
     let customLocks: any[] = [];
 
-    if (uniqueCustomLockIds.length > 0 && user) {
+    if (uniqueCustomLockIds.length > 0) {
       console.log("CHECKOUT DEBUG:", {
         customLockIds,
         uniqueCustomLockIds,
         userId: user.id,
       });
-      const { data, error } = await supabaseAdmin
-        .from("custom_cart_locks")
-        .select("*")
-        .in("id", uniqueCustomLockIds)
-        .eq("user_id", user.id)
-        .is("used_at", null);
-      console.log("CUSTOM LOCK RESULT:", {
-        data,
-        error,
-        requestedIds: uniqueCustomLockIds,
-      });
+
+      const { data, error } =
+        await supabaseAdmin
+          .from("custom_cart_locks")
+          .select("*")
+          .in(
+            "id",
+            uniqueCustomLockIds
+          )
+          .eq("user_id", user.id)
+          .is("used_at", null);
+
+      console.log(
+        "CUSTOM LOCK RESULT:",
+        {
+          data,
+          error,
+          requestedIds:
+            uniqueCustomLockIds,
+        }
+      );
 
       if (error || !data) {
-        console.error("CUSTOM LOCK FETCH ERROR:", error);
+        console.error(
+          "CUSTOM LOCK FETCH ERROR:",
+          error
+        );
 
         return NextResponse.json(
-          { error: "オーダー商品の確認に失敗しました" },
+          {
+            error:
+              "オーダー商品の確認に失敗しました",
+          },
           { status: 500 }
         );
       }
 
-      if (data.length !== uniqueCustomLockIds.length) {
+      if (
+        data.length !==
+        uniqueCustomLockIds.length
+      ) {
         return NextResponse.json(
           {
             error:
@@ -118,7 +168,9 @@ export async function POST(request: Request) {
 
       const expired = data.some(
         (lock) =>
-          new Date(lock.expires_at).getTime() <= Date.now()
+          new Date(
+            lock.expires_at
+          ).getTime() <= Date.now()
       );
 
       if (expired) {
@@ -134,22 +186,34 @@ export async function POST(request: Request) {
       customLocks = data;
     }
 
-    // 通常商品の30分予約
+    /*
+      =====================================
+      通常商品の30分予約
+      =====================================
+    */
+
     let reservationId = "";
 
     if (products.length > 0) {
-      reservationId = crypto.randomUUID();
+      reservationId =
+        crypto.randomUUID();
 
-      const productIds = products.map((product) =>
-        Number(product.id)
-      );
+      const productIds =
+        products.map((product) =>
+          Number(product.id)
+        );
 
       const { error: reservationError } =
-        await supabaseAdmin.rpc("reserve_products", {
-          p_product_ids: productIds,
-          p_reservation_id: reservationId,
-          p_minutes: 30,
-        });
+        await supabaseAdmin.rpc(
+          "reserve_products",
+          {
+            p_product_ids:
+              productIds,
+            p_reservation_id:
+              reservationId,
+            p_minutes: 30,
+          }
+        );
 
       if (reservationError) {
         console.error(
@@ -167,84 +231,151 @@ export async function POST(request: Request) {
       }
     }
 
-    const regularLineItems = products.map((product) => ({
-      price_data: {
-        currency: "jpy",
-        product_data: {
-          name: product.name,
-        },
-        unit_amount: Math.round(Number(product.price)),
-      },
-      quantity: 1,
-    }));
+    /*
+      =====================================
+      Stripe 通常商品
+      =====================================
+    */
 
-    const customLineItems = customLocks.map((lock) => {
-      const typeName =
-        lock.product_type === "bracelet"
-          ? "オーダーブレスレット"
-          : lock.product_type === "earring"
-            ? "オーダーイヤリング"
-            : "オーダーピアス";
-
-      return {
+    const regularLineItems =
+      products.map((product) => ({
         price_data: {
           currency: "jpy",
+
           product_data: {
-            name: `${typeName} / Pattern ${lock.pattern_number} / ${lock.stone_name}`,
+            name: product.name,
           },
-          unit_amount: Math.round(Number(lock.unit_price)),
+
+          unit_amount:
+            Math.round(
+              Number(product.price)
+            ),
         },
-        quantity: Number(lock.quantity),
-      };
-    });
 
-    const origin = new URL(request.url).origin;
+        quantity: 1,
+      }));
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+    /*
+      =====================================
+      Stripe オーダー商品
+      =====================================
+    */
 
-      shipping_address_collection: {
-        allowed_countries: ["JP"],
-      },
+    const customLineItems =
+      customLocks.map((lock) => {
+        const typeName =
+          lock.product_type ===
+            "bracelet"
+            ? "オーダーブレスレット"
+            : lock.product_type ===
+              "earring"
+              ? "オーダーイヤリング"
+              : "オーダーピアス";
 
-      phone_number_collection: {
-        enabled: true,
-      },
+        return {
+          price_data: {
+            currency: "jpy",
 
-      expires_at:
-        Math.floor(Date.now() / 1000) + 30 * 60,
+            product_data: {
+              name:
+                `${typeName} / Pattern ${lock.pattern_number} / ${lock.stone_name}`,
+            },
 
-      metadata: {
-        product_ids: products
-          .map((product) => product.id)
-          .join(","),
+            unit_amount:
+              Math.round(
+                Number(
+                  lock.unit_price
+                )
+              ),
+          },
 
-        custom_lock_ids: customLocks
-          .map((lock) => lock.id)
-          .join(","),
+          quantity: Number(
+            lock.quantity
+          ),
+        };
+      });
 
-        reservation_id: reservationId,
+    /*
+      =====================================
+      Stripe Checkout Session
+      =====================================
+    */
 
-        user_id: user?.id ?? "",
-      },
+    const origin =
+      new URL(request.url).origin;
 
-      line_items: [
-        ...regularLineItems,
-        ...customLineItems,
-      ],
+    const session =
+      await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
 
-      success_url: `${origin}/success`,
-      cancel_url: `${origin}/cart`,
-    });
+          shipping_address_collection: {
+            allowed_countries: [
+              "JP",
+            ],
+          },
+
+          phone_number_collection: {
+            enabled: true,
+          },
+
+          expires_at:
+            Math.floor(
+              Date.now() / 1000
+            ) +
+            30 * 60,
+
+          metadata: {
+            product_ids:
+              products
+                .map(
+                  (product) =>
+                    product.id
+                )
+                .join(","),
+
+            custom_lock_ids:
+              customLocks
+                .map(
+                  (lock) =>
+                    lock.id
+                )
+                .join(","),
+
+            reservation_id:
+              reservationId,
+
+            // ログイン済みユーザーIDを必ず保存
+            user_id: user.id,
+          },
+
+          line_items: [
+            ...regularLineItems,
+            ...customLineItems,
+          ],
+
+          success_url:
+            `${origin}/success`,
+
+          cancel_url:
+            `${origin}/cart`,
+        }
+      );
 
     return NextResponse.json({
       url: session.url,
     });
   } catch (error) {
-    console.error("CHECKOUT ERROR:", error);
+    console.error(
+      "CHECKOUT ERROR:",
+      error
+    );
 
     return NextResponse.json(
-      { error: "Checkoutの作成に失敗しました" },
+      {
+        error:
+          "Checkoutの作成に失敗しました",
+      },
       { status: 500 }
     );
   }
