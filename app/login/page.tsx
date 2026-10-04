@@ -75,6 +75,14 @@ export default function LoginPage() {
                             required
                         />
                     </div>
+                    <div className="text-right">
+                        <Link
+                            href="/forgot-password"
+                            className="text-sm text-blue-500"
+                        >
+                            パスワードをお忘れですか？
+                        </Link>
+                    </div>
                     <button type="submit" className="mt-2 bg-black p-3 text-white">
                         ログイン
                     </button>
