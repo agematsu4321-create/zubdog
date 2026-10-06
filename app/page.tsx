@@ -16,7 +16,9 @@ export default async function Home() {
     .from("products")
     .select("*")
     .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .order("created_at", {
+      ascending: false,
+    });
 
   if (error) {
     return (
@@ -27,20 +29,32 @@ export default async function Home() {
   }
 
   const categories = [
-    { key: "bracelet", label: "ブレスレット" },
-    { key: "earring", label: "イヤリング" },
-    { key: "piercing", label: "ピアス" },
+    {
+      key: "bracelet",
+      label: "ブレスレット",
+      english: "Bracelet",
+    },
+    {
+      key: "earring",
+      label: "イヤリング",
+      english: "Earring",
+    },
+    {
+      key: "piercing",
+      label: "ピアス",
+      english: "Piercing",
+    },
   ];
 
   const featuredProduct = products?.[0];
 
   return (
     <main className="wood-bg min-h-screen text-[#E7D9BE]">
-
-      {/* HERO */}
+      {/* =========================
+          HERO
+      ========================= */}
       <section className="mx-auto w-full max-w-[1200px] px-6 py-12 md:py-16">
         <div className="grid min-h-[430px] overflow-hidden bg-black md:grid-cols-2">
-
           {/* HERO TEXT */}
           <div className="flex flex-col justify-center px-8 py-12 md:px-14">
             <p className="mb-4 text-sm tracking-[0.25em] text-[#E7D9BE]/70">
@@ -95,7 +109,9 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ABOUT */}
+      {/* =========================
+          ABOUT
+      ========================= */}
       <section className="mx-auto max-w-[900px] px-6 py-20 text-center">
         <p className="mb-5 text-xs tracking-[0.3em] text-[#E7D9BE]/60">
           ABOUT ZUBDOG
@@ -120,8 +136,13 @@ export default async function Home() {
         </Link>
       </section>
 
-      {/* CATEGORY LINKS */}
-      <section className="mx-auto w-full max-w-[1000px] px-6 pb-20">
+      {/* =========================
+          CATEGORY LINKS
+      ========================= */}
+      <section
+        id="products"
+        className="mx-auto w-full max-w-[1000px] px-6 pb-5 md:pb-20"
+      >
         <h2
           className={`${notoSerif.className} mb-10 text-center text-2xl font-medium`}
         >
@@ -135,7 +156,9 @@ export default async function Home() {
               href={`/category/${category.key}`}
               className="group flex min-h-[130px] items-center justify-between border border-[#E7D9BE]/40 bg-black/20 px-7 transition hover:bg-black/40"
             >
-              <span className={`${notoSerif.className} text-xl`}>
+              <span
+                className={`${notoSerif.className} text-xl`}
+              >
                 {category.label}
               </span>
 
@@ -147,57 +170,130 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* PRODUCTS */}
+      {/* =========================
+          CATEGORY → BRACELET
+          MOBILE ONLY GAP
+      ========================= */}
       <div
-        id="products"
-        className="mx-auto min-h-screen w-full max-w-[1200px] px-6 py-12"
-      >
-        <div className="mb-12 flex justify-center">
-          <h2 className={`${notoSerif.className} text-2xl font-medium`}>
+        className="md:hidden"
+        style={{
+          height: "60px",
+        }}
+      />
+
+      {/* =========================
+          PRODUCTS
+      ========================= */}
+      <div className="mx-auto w-full max-w-[1200px] pb-24 pt-2 md:px-6 md:py-12">
+        {/* PC TITLE */}
+        <div className="mb-12 hidden justify-center md:flex">
+          <h2
+            className={`${notoSerif.className} text-2xl font-medium`}
+          >
             商品一覧
           </h2>
         </div>
 
         <div className="space-y-16">
           {categories.map((category) => {
-            const categoryProducts = (products ?? []).filter(
-              (product) => product.category === category.key
-            );
-
-            if (categoryProducts.length === 0) {
-              return null;
-            }
+            const categoryProducts = (products ?? [])
+              .filter(
+                (product) =>
+                  product.category === category.key
+              )
+              .slice(0, 6);
 
             return (
-              <section key={category.key}>
-                <div className="mx-auto mb-8 flex max-w-[904px] items-center justify-between">
+              <section
+                key={category.key}
+                className="w-full"
+              >
+                {/* =========================
+                    CATEGORY TITLE
+                ========================= */}
+                <div className="mb-6 flex w-full items-center justify-between px-4 md:mx-auto md:mb-8 md:max-w-[904px] md:px-0">
+                  {/* MOBILE */}
                   <h2
-                    className={`${notoSerif.className} text-2xl font-medium`}
+                    className={`${notoSerif.className} text-base font-medium tracking-[0.08em] md:hidden`}
+                  >
+                    {category.english}
+                  </h2>
+
+                  {/* PC */}
+                  <h2
+                    className={`${notoSerif.className} hidden text-2xl font-medium md:block`}
                   >
                     {category.label}
                   </h2>
 
                   <Link
                     href={`/category/${category.key}`}
-                    className="flex h-10 w-10 items-center justify-center text-2xl transition-transform hover:translate-x-1"
+                    className="flex h-8 w-8 items-center justify-center text-xl md:h-10 md:w-10 md:text-2xl"
                     aria-label={`${category.label}の商品一覧を見る`}
                   >
                     &gt;
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-2 justify-center gap-6 sm:grid-cols-3 lg:grid-cols-4">
-                  {categoryProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      name={product.name}
-                      price={product.price}
-                      slug={product.slug}
-                      image={product.image_url}
-                      soldOut={product.sold_out}
-                    />
-                  ))}
-                </div>
+                {/* =========================
+                    MOBILE PRODUCTS
+                ========================= */}
+                {categoryProducts.length > 0 ? (
+                  <div className="w-full overflow-x-auto px-3 pb-2 md:hidden">
+                    <div className="flex items-start gap-4">
+                      {categoryProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="shrink-0 overflow-hidden"
+                          style={{
+                            width: "calc(42vw + 12px)",
+                            minWidth: "calc(42vw + 12px)",
+                            maxWidth: "calc(42vw + 12px)",
+                            flex: "0 0 calc(42vw + 12px)",
+                          }}
+                        >
+                          <ProductCard
+                            name={product.name}
+                            price={product.price}
+                            slug={product.slug}
+                            image={product.image_url}
+                            soldOut={product.sold_out}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-4 md:hidden">
+                    <p className="text-sm text-[#E7D9BE]/45">
+                      商品はまだありません。
+                    </p>
+                  </div>
+                )}
+
+                {/* =========================
+                    PC PRODUCTS
+                ========================= */}
+                {categoryProducts.length > 0 ? (
+                  <div className="hidden md:grid md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                    {categoryProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        name={product.name}
+                        price={product.price}
+                        slug={product.slug}
+                        image={product.image_url}
+                        soldOut={product.sold_out}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="hidden md:block">
+                    <p className="text-sm text-[#E7D9BE]/45">
+                      商品はまだありません。
+                    </p>
+                  </div>
+                )}
               </section>
             );
           })}

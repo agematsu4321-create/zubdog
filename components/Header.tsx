@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function Header() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { cartItems } = useCart();
+
   const [loggedIn, setLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -22,9 +22,11 @@ export default function Header() {
       }
 
       const user = data.user;
+
       setLoggedIn(!!user);
 
       const userEmail = user?.email?.trim().toLowerCase();
+
       const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
         ?.trim()
         .toLowerCase();
@@ -40,23 +42,26 @@ export default function Header() {
 
     setLoggedIn(false);
     setIsAdmin(false);
-    setMenuOpen(false);
   }
 
   return (
-    <header className="relative z-50 bg-white">
-      <div className="mx-auto grid h-16 w-full max-w-[1400px] grid-cols-[1fr_auto_1fr] items-center border-b border-stone-200 px-4 md:px-6">
+    <header className="relative z-[9999] h-16 w-full border-b border-[#1F3A2E]/10 bg-white text-[#1F3A2E]">
+      <div className="relative mx-auto flex h-full w-full max-w-[1400px] items-center px-6">
 
-        {/* LEFT : LOGO */}
+        {/* =========================
+            LOGO
+        ========================= */}
         <Link
           href="/"
-          className="justify-self-start text-2xl font-normal tracking-wide md:text-4xl"
+          className="text-[27px] font-normal tracking-[0.03em] text-[#1F3A2E] md:text-4xl"
         >
           ZUBDOG
         </Link>
 
-        {/* CENTER : NAVIGATION */}
-        <nav className="hidden items-center gap-8 text-sm md:flex">
+        {/* =========================
+            PC NAVIGATION
+        ========================= */}
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-sm md:flex">
           <Link
             href="/"
             className="transition-opacity hover:opacity-50"
@@ -88,8 +93,11 @@ export default function Header() {
           )}
         </nav>
 
-        {/* RIGHT */}
-        <div className="hidden items-center justify-self-end gap-7 md:flex">
+        {/* =========================
+            PC RIGHT
+        ========================= */}
+        <div className="ml-auto hidden items-center gap-7 md:flex">
+
           {/* CART */}
           <Link
             href="/cart"
@@ -109,13 +117,13 @@ export default function Header() {
             </svg>
 
             {cartItems.length > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-xs text-white">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#1F3A2E] px-1 text-xs text-white">
                 {cartItems.length}
               </span>
             )}
           </Link>
 
-          {/* ACCOUNT / ORDER HISTORY */}
+          {/* ACCOUNT */}
           {loggedIn ? (
             <Link
               href="/account/orders"
@@ -155,6 +163,7 @@ export default function Header() {
           {/* LOGOUT */}
           {loggedIn && (
             <button
+              type="button"
               onClick={handleLogout}
               className="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-50"
               aria-label="ログアウト"
@@ -174,85 +183,94 @@ export default function Header() {
           )}
         </div>
 
-        {/* MOBILE BUTTON */}
-        <button
-          className="justify-self-end text-2xl md:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="メニュー"
-        >
-          {menuOpen ? "×" : "☰"}
-        </button>
+        {/* =========================
+            MOBILE MENU
+        ========================= */}
+        <details className="group ml-auto md:hidden">
+
+          {/* HAMBURGER */}
+          <summary
+            className="flex h-12 w-12 cursor-pointer list-none items-center justify-center [&::-webkit-details-marker]:hidden"
+            aria-label="メニュー"
+          >
+            <div className="flex h-8 w-8 flex-col justify-center gap-[6px]">
+              <span className="block h-[2px] w-8 bg-[#1F3A2E]" />
+              <span className="block h-[2px] w-8 bg-[#1F3A2E]" />
+              <span className="block h-[2px] w-8 bg-[#1F3A2E]" />
+            </div>
+          </summary>
+
+          {/* MENU PANEL */}
+          <div className="fixed left-0 right-0 top-16 z-[9998] border-t border-[#1F3A2E]/10 bg-white text-[#1F3A2E] shadow-lg">
+            <nav className="flex flex-col px-7 py-6 text-[15px]">
+
+              <Link
+                href="/"
+                className="border-b border-[#1F3A2E]/10 py-4"
+              >
+                トップページ
+              </Link>
+
+              <Link
+                href="/#products"
+                className="border-b border-[#1F3A2E]/10 py-4"
+              >
+                商品一覧
+              </Link>
+
+              <Link
+                href="/about"
+                className="border-b border-[#1F3A2E]/10 py-4"
+              >
+                ショップについて
+              </Link>
+
+              <Link
+                href="/cart"
+                className="border-b border-[#1F3A2E]/10 py-4"
+              >
+                カート ({cartItems.length})
+              </Link>
+
+              {loggedIn && (
+                <Link
+                  href="/account/orders"
+                  className="border-b border-[#1F3A2E]/10 py-4"
+                >
+                  注文履歴
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="border-b border-[#1F3A2E]/10 py-4"
+                >
+                  管理画面
+                </Link>
+              )}
+
+              {loggedIn ? (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="py-4 text-left"
+                >
+                  ログアウト
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="py-4"
+                >
+                  ログイン
+                </Link>
+              )}
+
+            </nav>
+          </div>
+        </details>
       </div>
-
-      {/* MOBILE MENU */}
-      {menuOpen && (
-        <div className="absolute left-0 top-16 w-full border-b border-stone-200 bg-white px-6 py-6 md:hidden">
-          <nav className="flex flex-col gap-5 text-sm">
-
-            <Link
-              href="/"
-              onClick={() => setMenuOpen(false)}
-            >
-              トップページ
-            </Link>
-
-            <Link
-              href="/#products"
-              onClick={() => setMenuOpen(false)}
-            >
-              商品一覧
-            </Link>
-
-            <Link
-              href="/about"
-              onClick={() => setMenuOpen(false)}
-            >
-              ショップについて
-            </Link>
-
-            <Link
-              href="/cart"
-              onClick={() => setMenuOpen(false)}
-            >
-              カート ({cartItems.length})
-            </Link>
-
-            {loggedIn && (
-              <Link
-                href="/account/orders"
-                onClick={() => setMenuOpen(false)}
-              >
-                注文履歴
-              </Link>
-            )}
-
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={() => setMenuOpen(false)}
-              >
-                管理画面
-              </Link>
-            )}
-
-            {loggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="text-left"
-              >
-                ログアウト
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                onClick={() => setMenuOpen(false)}
-              >
-                ログイン
-              </Link>
-            )}
-          </nav>
-        </div>
-      )}
     </header>
   );
 }
